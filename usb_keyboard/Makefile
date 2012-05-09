@@ -41,7 +41,7 @@
 
 
 # Target file name (without extension).
-TARGET = example
+TARGET = osbourne1
 
 
 # List C source files here. (C dependencies are automatically generated.)
