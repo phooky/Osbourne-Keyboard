@@ -32,19 +32,18 @@
 #define LED_OFF		(PORTD |= (1<<6))
 #define CPU_PRESCALE(n)	(CLKPR = 0x80, CLKPR = (n))
 
-uint16_t idle_count=0;
-
 /*****************
  Address pins - output
  Data pins - input
- A0 - D2   D0 - F5
- A1 - F6   D1 - B3
- A2 - F7   D2 - F4
- A3 - B6   D3 - B2
- A4 - B5   D4 - F1
- A5 - D0   D5 - B1
- A6 - D1   D6 - F0
- A7 - B7   D7 - B0
+ * - confirmed
+ A0 - D2*   D0 - F5*
+ A1 - F6*   D1 - B3*
+ A2 - F7*   D2 - F4*
+ A3 - B6    D3 - B2
+ A4 - B5    D4 - F1*
+ A5 - D0*   D5 - B1
+ A6 - D1*   D6 - F0
+ A7 - B7    D7 - B0*
  *****************/
 
 uint8_t keyState[8];
@@ -54,20 +53,20 @@ Keyboard matrix layout
 from http://old.pinouts.ru/Inputs/osborne_keyboard_pinout.shtml
 A0 Esc  Tab	Ctrl	 	Shift	Return	' "	[ ]
 A1 1 !  2 @	3 £	4 $	5 %	6 ^	7 &	8 *
-A5 Up   Left	0 )	Space	. >	P	O	9 (
 A2 Q    W	E	R	T	Y	U	I
 A3 A    S	D	F	G	H	J	K
 A4 Z    X	C	V	B	N	M	, <
+A5 Up   Left	0 )	Space	. >	P	O	9 (
 A6 Rgt	Down    - _	/ ?	; :	\ |	L	= +
 A7  	 	 	Lock	 	 	 	 
 ******************/
 uint8_t keyMap[64] = {
   KEY_ESC, KEY_TAB, KEY_CTRL, 0, KEY_SHIFT, KEY_ENTER, KEY_QUOTE, KEY_LEFT_BRACE,
   KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8,
-  KEY_UP, KEY_LEFT, KEY_0, KEY_SPACE, KEY_PERIOD, KEY_P, KEY_O, KEY_9,
   KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I,
   KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K,
   KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_M, KEY_COMMA,
+  KEY_UP, KEY_LEFT, KEY_0, KEY_SPACE, KEY_PERIOD, KEY_P, KEY_O, KEY_9,
   KEY_RIGHT, KEY_DOWN, KEY_MINUS, KEY_SLASH, KEY_SEMICOLON, KEY_BACKSLASH, KEY_L, KEY_EQUAL,
   0, 0, 0, KEY_CAPS_LOCK, 0, 0, 0, 0
 };
@@ -99,14 +98,18 @@ void setAddr(int8_t idx) {
   PORTB |= _BV(7) | _BV(6) | _BV(5);
   // set correct line low
   switch(idx) {
+    /*
   case 0: PORTD &= ~_BV(2); break;
   case 1: PORTF &= ~_BV(6); break;
   case 2: PORTF &= ~_BV(7); break;
   case 3: PORTB &= ~_BV(6); break;
+    */
   case 4: PORTB &= ~_BV(5); break;
+    /*
   case 5: PORTD &= ~_BV(0); break;
   case 6: PORTD &= ~_BV(1); break;
   case 7: PORTB &= ~_BV(7); break;
+    */
   }
 }
 
@@ -125,16 +128,13 @@ void readCycle(int8_t idx) {
 
 void initPins(void) {
   setAddr(-1);
-  DDRD |= _BV(2) | _BV(1) | _BV(0);
-  DDRF |= _BV(7) | _BV(6);
-  DDRB |= _BV(7) | _BV(6) | _BV(5);
+  DDRD = _BV(2) | _BV(1) | _BV(0);
+  DDRF = _BV(7) | _BV(6);
+  DDRB = _BV(7) | _BV(6) | _BV(5);
 }
 
 int main(void)
 {
-	uint8_t b, d, mask, i, reset_idle;
-	uint8_t b_prev=0xFF, d_prev=0xFF;
-
 	// set for 16 MHz clock
 	CPU_PRESCALE(0);
 
@@ -146,6 +146,8 @@ int main(void)
 	PORTF = 0xFF;
 	initState();
 	initPins();
+	TCCR0A &= 0x03;
+	TCCR1A &= 0x03;
 
 	// Initialize the USB, and then wait for the host to set configuration.
 	// If the Teensy is powered without a PC connected to the USB port,
@@ -157,13 +159,6 @@ int main(void)
 	// and do whatever it does to actually be ready for input
 	_delay_ms(1000);
 
-	// Configure timer 0 to generate a timer overflow interrupt every
-	// 256*1024 clock cycles, or approx 61 Hz when using 16 MHz clock
-	// This demonstrates how to use interrupts to implement a simple
-	// inactivity timeout.
-	TCCR0A = 0x00;
-	TCCR0B = 0x05;
-	TIMSK0 = (1<<TOIE0);
 
 	usb_keyboard_press(KEY_B, 0);
 	while (1) {
@@ -176,14 +171,6 @@ int main(void)
 		// to mechanical "bounce".
 		_delay_ms(2);
 	}
-}
-
-// This interrupt routine is run approx 61 times per second.
-// A very simple inactivity timeout is implemented, where we
-// will send a space character.
-ISR(TIMER0_OVF_vect)
-{
-	idle_count++;
 }
 
 
