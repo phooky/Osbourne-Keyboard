@@ -32,6 +32,10 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_RIGHT_ALT	0x40
 #define KEY_RIGHT_GUI	0x80
 
+#define MOD_CTRL (KEY_CTRL<<8)
+#define MOD_SHIFT (KEY_SHIFT<<8)
+#define MOD_ALT (KEY_ALT<<8)
+
 #define KEY_A		4
 #define KEY_B		5
 #define KEY_C		6

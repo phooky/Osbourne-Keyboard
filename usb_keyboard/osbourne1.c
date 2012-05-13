@@ -61,8 +61,8 @@ A5 Up   Left	0 )	Space	. >	P	O	9 (
 A6 Rgt	Down    - _	/ ?	; :	\ |	L	= +
 A7  	 	 	Lock	 	 	 	 
 ******************/
-uint8_t keyMap[64] = {
-  KEY_ESC, KEY_TAB, KEY_CTRL, 0, KEY_SHIFT, KEY_ENTER, KEY_QUOTE, KEY_LEFT_BRACE,
+uint16_t keyMap[64] = {
+  KEY_ESC, KEY_TAB, MOD_CTRL, 0, MOD_SHIFT, KEY_ENTER, KEY_QUOTE, KEY_LEFT_BRACE,
   KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8,
   KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I,
   KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K,
@@ -77,18 +77,48 @@ void initState(void) {
   for (idx = 0; idx < 8; idx++) keyState[idx] = 0;
 }
 
+uint8_t key_count;
+uint8_t key_touched;
+
+void clearReport(void) {
+  keyboard_modifier_keys = 0;
+  for (int8_t i = 0; i < 6; i++) {
+    keyboard_keys[i] = 0;
+  }
+  key_count = 0;
+  key_touched = 0;
+}
+
+void addToReport(uint16_t key) {
+  key_touched = 1;
+  if (key > 0xff) {
+    keyboard_modifier_keys |= key >> 8;
+  } else {
+    if (key_count < 6) {
+      keyboard_keys[key_count++] = key & 0xff;
+    }
+  }
+}
+
+void endReport(void) {
+  if (key_touched) {
+    usb_keyboard_send();
+  }
+}
+
 void doKeyState(uint8_t a, uint8_t d, uint8_t state) {
   uint8_t oldState = (keyState[a] & _BV(d)) != 0;
   uint8_t newState = state == 0;
-  uint8_t key = keyMap[(a*8)+d];
+  uint16_t key = keyMap[(a*8)+d];
   if (key == 0) return;
   if (oldState != newState) {
-    if (newState) {
-      usb_keyboard_press(key, 0);
-      keyState[a] |= _BV(d);
-    } else {
-      keyState[a] &= ~_BV(d);
-    }
+    key_touched = 1;
+  }
+  if (newState) {
+    addToReport(key);
+    keyState[a] |= _BV(d);
+  } else {
+    keyState[a] &= ~_BV(d);
   }
 }
 
@@ -159,13 +189,13 @@ int main(void)
 
 	while (1) {
 	  uint8_t idx;
+	  clearReport();
 	  for (idx = 0; idx < 8; idx++) {
 	    readCycle(idx);
 	  }
-		// now the current pins will be the previous, and
-		// wait a short delay so we're not highly sensitive
-		// to mechanical "bounce".
-		_delay_ms(2);
+	  endReport();
+	  // debouncing delay
+	  _delay_ms(2);
 	}
 }
 
