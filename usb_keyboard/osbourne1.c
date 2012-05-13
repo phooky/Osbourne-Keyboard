@@ -157,8 +157,6 @@ int main(void)
 	// and do whatever it does to actually be ready for input
 	_delay_ms(1000);
 
-
-	usb_keyboard_press(KEY_B, 0);
 	while (1) {
 	  uint8_t idx;
 	  for (idx = 0; idx < 8; idx++) {
