@@ -12,7 +12,12 @@ patternline:
 loop:
 	;; -- BIT 0 --
 	out _SFR_IO_ADDR(PORTB), r0 ; 1 write bit
+/*
 	ld r0, Z+		    ; 3 load next byte
+	*/
+	ldi r18, 0x11		    ; load imm
+	com r18
+	mov r0, r18
 	;; -- BIT 1 --
 	out _SFR_IO_ADDR(PORTB), r0 ; 1 write bit
 	asr r0			    ; 1 shift right
@@ -46,7 +51,7 @@ loop:
 	;; -- BIT 7 --
 	out _SFR_IO_ADDR(PORTB), r0 ; 1 write bit
 	asr r0			    ; 1 shift right
-	brts loop		    ; 2 if true -- loop (1 if false)
+	brtc loop		    ; 2 if true -- loop (1 if false)
 
 	ret			; 4 cycles
 

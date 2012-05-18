@@ -30,6 +30,11 @@
 
 extern void patternline(uint8_t count, uint16_t base);
 
+uint8_t imagedata[] PROGMEM = {
+  0x55, 0xAA, 0x55, 0xAA, 0xF0, 0xF5, 0xEE, 0xCC,
+  0xCC, 0xEE, 0x5F, 0x0F, 0xAA, 0x55, 0xAA, 0x55
+};
+
 void fakeline(void) {
   //PORTF = _BV(1);
   PORTF = _BV(0);
@@ -43,9 +48,9 @@ void line(unsigned char i) {
   //PORTF = _BV(0) | _BV(1);
   PORTF = 0;
   if (i >= 20) {
-    patternline(16, fakeline);
-    PORTF = _BV(1);
     _delay_us(32);
+    PORTF = _BV(1);
+    patternline(16, imagedata);
   } else {
     //PORTB = 0;
     PORTB = _BV(0);
