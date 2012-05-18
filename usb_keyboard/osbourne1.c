@@ -28,9 +28,6 @@
 #include <util/delay.h>
 #include "usb_keyboard.h"
 
-#define LED_CONFIG	(DDRD |= (1<<6))
-#define LED_ON		(PORTD &= ~(1<<6))
-#define LED_OFF		(PORTD |= (1<<6))
 #define CPU_PRESCALE(n)	(CLKPR = 0x80, CLKPR = (n))
 
 /*****************
@@ -123,27 +120,27 @@ void doKeyState(uint8_t a, uint8_t d, uint8_t state) {
 }
 
 void setAddr(int8_t idx) {
-  // set all addr lines high
-  PORTD |= _BV(2) | _BV(1) | _BV(0);
-  PORTF |= _BV(7) | _BV(6);
-  PORTB |= _BV(7) | _BV(6) | _BV(5);
+  // set all addr lines hi-impedence with
+  // pullups switched off
+  DDRD &= ~(_BV(2) | _BV(1) | _BV(0));
+  DDRF &= ~(_BV(7) | _BV(6));
+  DDRB &= ~(_BV(7) | _BV(6) | _BV(5));
   // set correct line low
   switch(idx) {
-  case 0: PORTD &= ~_BV(2); break;
-  case 1: PORTF &= ~_BV(6); break;
-  case 2: PORTF &= ~_BV(7); break;
-  case 3: PORTB &= ~_BV(6); break;
-  case 4: PORTB &= ~_BV(5); break;
-  case 5: PORTD &= ~_BV(0); break;
-  case 6: PORTD &= ~_BV(1); break;
-  case 7: PORTB &= ~_BV(7); break;
+  case 0: DDRD |= _BV(2); break;
+  case 1: DDRF |= _BV(6); break;
+  case 2: DDRF |= _BV(7); break;
+  case 3: DDRB |= _BV(6); break;
+  case 4: DDRB |= _BV(5); break;
+  case 5: DDRD |= _BV(0); break;
+  case 6: DDRD |= _BV(1); break;
+  case 7: DDRB |= _BV(7); break;
   }
 }
 
 
 void readCycle(int8_t idx) {
   setAddr(idx);
-  //_delay_ms(50);
   doKeyState(idx,0,PINF & _BV(5));
   doKeyState(idx,1,PINB & _BV(3));
   doKeyState(idx,2,PINF & _BV(4));
@@ -155,10 +152,14 @@ void readCycle(int8_t idx) {
 }
 
 void initPins(void) {
-  setAddr(-1);
-  DDRD = _BV(2) | _BV(1) | _BV(0);
-  DDRF = _BV(7) | _BV(6);
-  DDRB = _BV(7) | _BV(6) | _BV(5);
+  // all pins low, all pullups down, etc.
+  DDRD = 0;
+  DDRF = 0;
+  DDRB = 0;
+  // Pullups for input lines
+  PORTD = 0;
+  PORTF = _BV(5) | _BV(4) | _BV(1) | _BV(0);
+  PORTB = _BV(3) | _BV(2) | _BV(1) | _BV(0);
 }
 
 int main(void)
@@ -166,12 +167,6 @@ int main(void)
 	// set for 16 MHz clock
 	CPU_PRESCALE(0);
 
-	DDRD = 0x00;
-	DDRB = 0x00;
-	DDRF = 0x00;
-	PORTB = 0xFF;
-	PORTD = 0xFF;
-	PORTF = 0xFF;
 	initState();
 	initPins();
 	TCCR0A &= 0x03;

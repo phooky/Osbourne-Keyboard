@@ -1,0 +1,10 @@
+0.125uS is 2 cycles on an atmega core.
+HOWEVER-- that's "minimum" dot time.
+total time is 52uS-- 416 pixels.
+with some sort of sync'd multiplexer, we could get higher
+speeds... pushing our 2 or 4 pixels at a time. how to sync
+it, though?
+
+initial hackery: atmega
+
+sophisticated hackery: beaglebone or the like
