@@ -1,15 +1,11 @@
 #include <avr/io.h>
 
-/* r0 - temp */
-/* r24 count */
-/* r22 - r23 location */
-/* r20 - time to flip midpoint bit in ms/2 */
-/* r18 - sreg temp store for count */
-/* r19 - sreg temp store for midpoint flip */
-.global patternline
-/* r24 us */
+;;; Sleep for the specified number of microseconds.
+;;; The minimum sleep is 1uS. The sleep accounts
+;;; for the call and return, but _not_ the time
+;;; required to set up the parameters.
 .global usleep
-
+	;; r24 : time in uS
 usleep:
 	dec r24
 	clc
@@ -21,7 +17,22 @@ sl_loop:
 	brne sl_loop		;2 clocks
 	nop
 	ret
-	
+
+;;; Draw a pattern from program memory to the
+;;; video output. Two blank pixels will be drawn
+;;; at the start of the pattern.
+.global patternline
+	;; Parameters:
+	;; r24 : number of pixels to draw (after blanks)
+	;; r22 : location of pattern to draw (uint16_t)
+	;; r20 : number of bytes through the pattern to
+	;;       toggle the HSync pin
+
+	;; Variables: 
+	;; r0  : buffer for currently drawn byte
+	;; r18 : sreg temp store for count
+	;; r19 : sreg temp store for midpoint flip
+
 patternline:	
 	movw r30, r22 		; 1  init mem location
 	clr r0			; 1  clear first bit
