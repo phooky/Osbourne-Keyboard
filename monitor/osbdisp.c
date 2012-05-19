@@ -28,7 +28,8 @@
 #include <util/delay.h>
 
 
-extern void patternline(uint8_t count, uint16_t base);
+extern void patternline(uint8_t count, uint16_t base, uint8_t to_flip);
+extern void usleep(uint8_t count);
 
 uint8_t imagedata[] PROGMEM = {
   0x55, 0xAA, 0x55, 0xAA, 0xF0, 0xF5, 0xEE, 0xCC,
@@ -38,29 +39,10 @@ uint8_t imagedata[] PROGMEM = {
 void fakeline(void) {
   //PORTF = _BV(1);
   PORTF = _BV(0);
-  _delay_us(32);
+  _delay_us(31);
   //PORTF = 0;
   PORTF = _BV(0) | _BV(1);
   _delay_us(32);
-}
-
-void line(unsigned char i) {
-  //PORTF = _BV(0) | _BV(1);
-  PORTF = 0;
-  if (i >= 20) {
-    _delay_us(32);
-    PORTF = _BV(1);
-    patternline(16, imagedata);
-  } else {
-    //PORTB = 0;
-    PORTB = _BV(0);
-    _delay_us(32);
-    PORTF = _BV(1);
-    //PORTB = _BV(0);
-    PORTB = 0;
-    _delay_us(32);
-  }
-  PORTB = _BV(0);
 }
 
 void initPins(void) {
@@ -76,16 +58,35 @@ void initPins(void) {
 
 int main(void)
 {
+  uint8_t offset = 0;
+  uint8_t direction = 1;
   CLKPR = 0x80, CLKPR = 0;
   initPins();
   while (1) {
     fakeline(); fakeline(); fakeline(); fakeline(); fakeline();
     fakeline(); fakeline(); fakeline(); fakeline(); fakeline();
     fakeline(); fakeline(); fakeline(); fakeline(); fakeline();
-    fakeline(); fakeline(); fakeline(); fakeline(); fakeline();
+    //fakeline(); fakeline(); fakeline(); fakeline(); fakeline();
     unsigned char i = 0;
     for (i = 0; i < 240; i++) {
-      line(i);
+      PORTF = 0;
+      if (direction) {
+	if (++offset > 7) {
+	  direction = 0;
+	}
+      } else {
+	if (--offset <= 1) {
+	  direction = 1;
+	}
+      }
+      //offset = 0;
+      usleep(11+offset);
+      //_delay_us(11);
+      // 16 bytes = 32 us
+      patternline(16, (uint16_t)imagedata, 10 - offset/2);
+      usleep(20-offset);
+      //_delay_us(20);
+      PORTB = _BV(0);
     }
   }
 }
